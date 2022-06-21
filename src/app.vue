@@ -1,33 +1,37 @@
 <template>
   <div class="d-flex flex-column h-100vh p-30">
-    <ElCard>
-      <div class="flex-grow-1 p-relative w-100" style="height: 70vh; transform: scale(1, -1)" ref="$canvas">
+    <ElCard class="flex-grow-1">
+      <div class="p-relative w-100 h-100" style="transform: scale(1, -1)" ref="$canvas">
+        <svg class="p-absolute" style="top: -2px; width: 100%; height: 2px" viewBox="0 0 100 2" preserveAspectRatio="none">
+          <line x1="0" y1="0" x2="100" y2="0" stroke="#aaaaaa" stroke-width="4"></line>
+        </svg>
+        <svg class="p-absolute" style="left: -2px; width: 2px; height: 100%" viewBox="0 0 2 100" preserveAspectRatio="none">
+          <line x1="0" y1="0" x2="0" y2="100" stroke="#aaaaaa" stroke-width="4"></line>
+        </svg>
+
         <canvas class="p-absolute left-0 top-0 w-100 h-100" ref="$wave" :width="width" :height="height"></canvas>
       </div>
     </ElCard>
     <div class="d-flex m-t-20">
       <ElCard class="flex-basis-0 flex-grow-1">
-        <div class="d-flex align-items-center">
-          <label class="cursor-pointer">
-            <img style="width: 20px; height: 20px" src="@/images/upload.svg" />
-            <input class="d-none" type="file" accept="audio/*" @change="handle_input_change" />
-          </label>
-          <div class="m-l-20 cursor-pointer opacity-5 pointer-events-none" :class="{ active: audio }" @click="handle_play_click">
-            <img v-if="play" style="width: 20px; height: 20px" src="./images/pause.svg" />
-            <img v-else style="width: 20px; height: 20px" src="./images/play.svg" />
-          </div>
-        </div>
-        <ElFormItem class="m-t-10" label="FFT长度">
-          <ElSelect v-model="fftSize" placeholder="FFT长度">
-            <ElOption label="1024" :value="1024" />
-            <ElOption label="512" :value="512" />
-            <ElOption label="256" :value="256" />
-            <ElOption label="128" :value="128" />
-            <ElOption label="64" :value="64" />
-          </ElSelect>
-        </ElFormItem>
+        <label class="cursor-pointer">
+          <img style="width: 20px; height: 20px" src="@/images/upload.svg" />
+          <input class="d-none" type="file" accept="audio/*" @change="handle_input_change" />
+        </label>
+        <ElSelect class="m-l-15" v-model="fftSize">
+          <ElOption label="1024" :value="1024" />
+          <ElOption label="512" :value="512" />
+          <ElOption label="256" :value="256" />
+          <ElOption label="128" :value="128" />
+          <ElOption label="64" :value="64" />
+        </ElSelect>
       </ElCard>
-      <ElCard class="flex-basis-0 flex-grow-1 m-l-20"> </ElCard>
+      <ElCard class="flex-basis-0 flex-grow-1 m-l-20">
+        <div class="cursor-pointer opacity-5 pointer-events-none" :class="{ active: audio }" @click="handle_play_click">
+          <img v-if="play" style="width: 20px; height: 20px" src="./images/pause.svg" />
+          <img v-else style="width: 20px; height: 20px" src="./images/play.svg" />
+        </div>
+      </ElCard>
       <ElCard class="flex-basis-0 flex-grow-1 m-l-20"> </ElCard>
     </div>
   </div>
@@ -134,9 +138,15 @@
   }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
   .active {
     opacity: 1;
     pointer-events: all;
+  }
+
+  :deep(.el-card__body) {
+    height: 100%;
+    display: flex;
+    align-items: center;
   }
 </style>
