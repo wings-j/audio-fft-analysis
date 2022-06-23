@@ -11,6 +11,7 @@ export default defineConfig({
   },
   plugins: [Vue()],
   build: {
-    target: 'esnext'
+    target: 'esnext',
+    outDir: 'docs'
   }
 })

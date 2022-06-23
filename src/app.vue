@@ -1,6 +1,6 @@
 <template>
   <div class="d-flex flex-column h-100vh p-30">
-    <ElCard class="flex-grow-1">
+    <ElCard class="wrap flex-grow-1">
       <div class="p-relative w-100 h-100 p-20">
         <div class="p-relative w-100 h-100" style="transform: scale(1, -1)" ref="$canvas">
           <svg class="p-absolute" style="top: -2px; width: 100%; height: 2px" viewBox="0 0 100 2" preserveAspectRatio="none">
@@ -12,9 +12,7 @@
           <canvas class="p-absolute left-0 top-0 w-100 h-100" ref="$wave" :width="width" :height="height"></canvas>
         </div>
         <div class="overflow-hidden p-absolute w-100 f-12" style="left: 18px; bottom: -2px; height: 20px; line-height: 20px" :style="{ width: `${width}px` }">
-          <div v-for="a of scales" :key="a" class="scale-x p-absolute p-l-5" :style="{ left: `${(columnWidth + columnGap) * (a / unitFrequency)}px` }">{{
-            a
-          }}</div>
+          <div v-for="a of scales" :key="a" class="scale-x p-absolute p-l-5" :style="{ left: `${(columnWidth + columnGap) * a}px` }">{{ a }}</div>
         </div>
         <div class="p-absolute h-100 f-12" style="left: -2px; bottom: 18px; width: 20px; line-height: 20px">
           <div class="scale-y p-absolute w-100 p-l-5" style="bottom: -20px">0</div>
@@ -24,48 +22,46 @@
     </ElCard>
     <div class="d-flex m-t-20">
       <ElCard class="flex-basis-0 flex-grow-1">
-        <label class="cursor-pointer">
-          <img style="width: 20px; height: 20px" src="@/images/upload.svg" />
-          <input class="d-none" type="file" accept="audio/*" @change="handle_input_change" />
-        </label>
-        <ElSelect class="m-l-15" v-model="fftSize">
-          <ElOption label="1024" :value="1024" />
-          <ElOption label="512" :value="512" />
-          <ElOption label="256" :value="256" />
-          <ElOption label="128" :value="128" />
-          <ElOption label="64" :value="64" />
-        </ElSelect>
+        <div class="d-flex align-items-center">
+          <label class="cursor-pointer">
+            <img style="width: 20px; height: 20px" src="@/images/upload.svg" />
+            <input class="d-none" type="file" accept="audio/*" @change="handle_input_change" />
+          </label>
+          <ElSelect class="m-l-15" v-model="fftSize">
+            <ElOption label="1024" :value="1024" />
+            <ElOption label="512" :value="512" />
+            <ElOption label="256" :value="256" />
+            <ElOption label="128" :value="128" />
+            <ElOption label="64" :value="64" />
+          </ElSelect>
+        </div>
       </ElCard>
       <ElCard class="flex-basis-0 flex-grow-1 m-l-20">
-        <div class="cursor-pointer opacity-5 pointer-events-none" :class="{ active: ready }" @click="handle_play_click">
-          <img v-if="play" style="width: 20px; height: 20px" src="./images/pause.svg" />
-          <img v-else style="width: 20px; height: 20px" src="./images/play.svg" />
+        <div class="d-flex align-items-center">
+          <div class="cursor-pointer opacity-5 pointer-events-none" :class="{ enable: ready }" @click="handle_play_click">
+            <img v-if="play" style="width: 20px; height: 20px" src="./images/pause.svg" />
+            <img v-else style="width: 20px; height: 20px" src="./images/play.svg" />
+          </div>
+          <img class="m-l-15 cursor-pointer opacity-5 pointer-events-none" :class="{ enable: ready }" style="width: 20px; height: 20px" src="@/images/previous.svg" @click="handle_rollback_click" />
+          <svg
+            class="m-l-15 cursor-pointer opacity-5 pointer-events-none"
+            :class="{ enable: ready }"
+            style="height: 20px"
+            :style="{ width: `${slideLength + 10}px` }"
+            ref="$slide"
+            :viewBox="`0 -10 ${slideLength + 10} 20`"
+            @click="handle_slide_click"
+          >
+            <line x1="0" y1="0" :x2="slideLength" y2="0" stroke="black"></line>
+            <rect :x="progress * slideLength" y="-6" width="4" height="12"></rect>
+          </svg>
         </div>
-        <img
-          class="m-l-15 cursor-pointer opacity-5 pointer-events-none"
-          :class="{ active: ready }"
-          style="width: 20px; height: 20px"
-          src="@/images/previous.svg"
-          @click="handle_rollback_click"
-        />
-        <svg
-          class="m-l-15 cursor-pointer opacity-5 pointer-events-none"
-          :class="{ active: ready }"
-          style="height: 20px"
-          :style="{ width: `${slideLength + 10}px` }"
-          ref="$slide"
-          :viewBox="`0 -10 ${slideLength + 10} 20`"
-          @click="handle_slide_click"
-        >
-          <line x1="0" y1="0" :x2="slideLength" y2="0" stroke="black"></line>
-          <rect :x="progress * slideLength" y="-6" width="4" height="12"></rect>
-        </svg>
       </ElCard>
       <ElCard class="flex-basis-0 flex-grow-1 m-l-20">
         <div class="d-grid grid-template-columns-3 w-100">
           <div>平均：{{ statistics.mean.toFixed(2) }}</div>
           <div>最大：{{ statistics.max.toFixed(2) }}</div>
-          <div>范围：{{ statistics.range[0].toFixed(0) }}-{{ statistics.range[1].toFixed(0) }}Hz</div>
+          <div>范围：{{ statistics.range[0] }}-{{ statistics.range[1] }}</div>
         </div>
       </ElCard>
     </div>
@@ -77,13 +73,12 @@
   import { useElementSize, useMouseInElement } from '@vueuse/core'
   import { ElCard, ElSelect, ElOption } from 'element-plus'
   import { mean } from 'lodash-es'
+  import { Dialog } from '@wings-j/vue-component'
+  import Capture from './components/capture/index.vue'
+  import '@wings-j/vue-component/dist/index.css'
 
   const columnGap = 1
   const slideLength = 300
-  const maxFrequency = 22050 // TODO 舍弃频率，用索引取代
-  const scales = Array(23)
-    .fill(0)
-    .map((a, i) => 1000 * i)
   const $canvas = ref<HTMLCanvasElement | undefined>()
   const { width = ref(0), height = ref(0) } = useElementSize($canvas)
   const $wave = ref<HTMLCanvasElement | undefined>()
@@ -99,8 +94,17 @@
     range: [0, 0] as [number, number]
   })
   const halfFftSize = computed(() => fftSize.value / 2)
-  const unitFrequency = computed(() => maxFrequency / halfFftSize.value)
   const columnWidth = computed(() => Math.max(Math.floor(width.value / halfFftSize.value), 1))
+  const scales = computed(() => {
+    let d = halfFftSize.value / 8
+
+    return Array(16)
+      .fill(0)
+      .map((a, i) => d * i)
+  })
+  const capture = reactive({
+    active: false
+  })
 
   let $waveContext: CanvasRenderingContext2D | undefined
   let audio = new Audio()
@@ -171,6 +175,12 @@
     let rate = Math.min(Math.max(slideX.value / slideLength, 0), 1)
     audio.currentTime = audio.duration * rate
   }
+  /**
+   * 处理捕获点击
+   */
+  function handle_capture_click() {
+    Dialog(Capture)
+  }
 
   /**
    * 动画
@@ -214,7 +224,7 @@
     if (i >= j) {
       statistics.range = [0, 0]
     } else {
-      statistics.range = [(i / halfFftSize.value) * maxFrequency, (j / halfFftSize.value) * maxFrequency]
+      statistics.range = [i, j]
     }
   }
   /**
@@ -233,7 +243,14 @@
 </script>
 
 <style scoped lang="scss">
-  .active {
+  .wrap {
+    :deep(.el-card__body) {
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+  }
+  .enable {
     opacity: 1;
     pointer-events: all;
   }
@@ -242,11 +259,5 @@
   }
   .scale-y {
     border-top: 2px solid #aaa;
-  }
-
-  :deep(.el-card__body) {
-    height: 100%;
-    display: flex;
-    align-items: center;
   }
 </style>
